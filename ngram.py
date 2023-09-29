@@ -216,7 +216,26 @@ class NGram:
          ('<unk>', '<unk>', '<unk>'), ('<unk>', '<unk>', 'cat'), 
          ('<unk>', 'cat', 'again'), ('cat', 'again', '</s>')]
         """
-        raise NotImplementedError
+        data = data.lower()
+
+        sentences = sent_tokenize(data)
+        ngrams = []
+
+        for s in sentences:
+            words = word_tokenize(s)
+
+            for i, word in enumerate(words):
+                if word not in self.vocab:
+                    words[i] = self.unk
+
+            words = [self.bos] + words + [self.eos]
+
+            # Generate ngrams
+            for i in range(len(words) - size + 1):
+                ngram = tuple(words[i:i + size])
+                ngrams.append(ngram)
+
+        return ngrams
 
     #TODO: 25 points
     def mle(self, data: str, ngrams: dict) -> dict:
