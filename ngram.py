@@ -230,11 +230,17 @@ class NGram:
 
             words = [self.bos] + words + [self.eos]
 
+            #Padding <s>
+            num_pads = size - 2
+            for _ in range(num_pads):
+                words.insert(0, self.bos)
+
+
             # Generate ngrams
             for i in range(len(words) - size + 1):
                 ngram = tuple(words[i:i + size])
                 ngrams.append(ngram)
-
+            
         return ngrams
 
     #TODO: 25 points
@@ -296,7 +302,31 @@ class NGram:
                    1}, 'is': {'one': 1}, 'one': {'that': 1}, 'that': {'<unk>':
                    1}, 'again': {'.': 1}}}
         """
-        raise NotImplementedError
+        return_dict = {}
+
+        #n=1
+        if self.ngram_size >= 1:
+            for word in data:
+                return_dict['1gram'] = {}
+                if word in return_dict['1gram']:
+                    return_dict['1gram'] += 1
+                else:
+                    return_dict['1gram'][word] = 1
+        
+        #n>1
+        if self.ngram_size > 1:
+            for ngram_case in range(self.ngram_size - 1):
+                return_dict[str(ngram_case + 2) + 'gram'] = {}
+                
+            for word in data:
+                if word in return_dict[str(ngram_case + 2) + 'gram']:
+                    return_dict[str(ngram_case + 2) + 'gram'] += 1
+                    
+                else:
+                    return_dict[str(ngram_case + 2) + 'gram'] = 1
+        
+
+
 
     #TODO: 25 points
     def addK_prob(self, ngram:tuple[str], k:int) -> float:

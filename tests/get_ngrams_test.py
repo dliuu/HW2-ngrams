@@ -13,7 +13,6 @@ def testGetNGrams():
         sys.exit(1)
 
     data = "the kjdflkajs of the book's plot was weird and gothic"
-    print(model.get_ngrams(data, 3))
     assert model.get_ngrams(data, 3) == [('<s>', '<s>', 'the'), ('<s>', 'the',
                                                                  '<unk>'),
                                          ('the', '<unk>', 'of'), ('<unk>', 'of',
