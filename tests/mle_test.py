@@ -10,7 +10,7 @@ def compareGrams(data: str,
         if gram == '1gram':
             for target in goldNGrams[gram]:
                 assert target in studentNGrams[gram], f"Missing {target} from "\
-                                    f"{ngram}"
+                                    f"{gram}"
                 count = goldNGrams[gram][target]
                 assert count == studentNGrams[gram][target], f"Count is off "\
                                 f"for {target}. Should be {count}"
@@ -18,7 +18,7 @@ def compareGrams(data: str,
         else:
             for context in goldNGrams[gram]:
                 assert context in studentNGrams[gram], f"Missing {context} from "\
-                                    f"{ngram}"
+                                    f"{gram}"
                 for target in goldNGrams[gram][context]:
                     assert target in studentNGrams[gram][context], f"Missing "\
                             "{target} from {ngram} with context {context}"
@@ -39,7 +39,7 @@ def testMLE():
     data = "the kjdflkajs of the book's plot was weird and gothic"
 
     goldNGrams = {'1gram': {'the': 2, '<unk>': 5, 'of': 1, 'book': 1, 'was': 1, 'and': 1, '</s>': 1}, '2gram': {'<s>': {'the': 1}, 'the': {'<unk>': 1, 'book': 1}, '<unk>': {'of': 1, '<unk>': 1, 'was': 1, 'and': 1, '</s>': 1}, 'of': {'the': 1}, 'book': {'<unk>': 1}, 'was': {'<unk>': 1}, 'and': {'<unk>': 1}}, '3gram': {'<s> <s>': {'the': 1}, '<s> the': {'<unk>': 1}, 'the <unk>': {'of': 1}, '<unk> of': {'the': 1}, 'of the': {'book': 1}, 'the book': {'<unk>': 1}, 'book <unk>': {'<unk>': 1}, '<unk> <unk>': {'was': 1}, '<unk> was': {'<unk>': 1}, 'was <unk>': {'and': 1}, '<unk> and': {'<unk>': 1}, 'and <unk>': {'</s>': 1}}}
-
+    #{'1gram': {'<s>': 1, 'the': 2, '<unk>': 5, 'of': 1, 'book': 1, 'was': 1, 'and': 1, '</s>': 1}, '2gram': {'<s>': {('the',): 1}, 'the': {('<unk>',): 1, ('book',): 1}, '<unk>': {('of',): 1, ('<unk>',): 1, ('was',): 1, ('and',): 1, ('</s>',): 1}, 'of': {('the',): 1}, 'book': {('<unk>',): 1}, 'was': {('<unk>',): 1}, 'and': {('<unk>',): 1}}, '3gram': {'<s>': {('<s>', 'the'): 1, ('the', '<unk>'): 1}, 'the': {('<unk>', 'of'): 1, ('book', '<unk>'): 1}, '<unk>': {('of', 'the'): 1, ('<unk>', 'was'): 1, ('was', '<unk>'): 1, ('and', '<unk>'): 1}, 'of': {('the', 'book'): 1}, 'book': {('<unk>', '<unk>'): 1}, 'was': {('<unk>', 'and'): 1}, 'and': {('<unk>', '</s>'): 1}}}
     compareGrams(data, goldNGrams, model.mle(data, {}))
 
     data = "the cat sleeps. And the man snores!"

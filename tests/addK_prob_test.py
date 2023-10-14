@@ -17,7 +17,7 @@ def testAddKProb():
         sys.exit(1)
 
 
-
+    print(model.addK_prob(('the', 'cat', 'is'), 3))
     assert round(model.addK_prob(('the', 'cat', 'is'), 3), 5) == 0.00041
     assert round(model.addK_prob(('the', 'cat'), 1), 5) == 0.00083
     assert round(model.addK_prob(('the',), .01), 5) == 0.08499

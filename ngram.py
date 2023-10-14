@@ -245,85 +245,70 @@ class NGram:
 
     #TODO: 25 points
     def mle(self, data: str, ngrams: dict) -> dict:
-        """Implements part of maximum likelihood estimation. In particular,
-        counts of ngrams in data are returned as a dictionary. If the parameter
-        ngrams is passed an existing dictionary, the counts are added to that
-        dictionary. 
-
-        The returned dictionary should contain counts of ngrams of size
-        self.ngram_size and all lower order ngrams. The core structure of the
-        returned dictionary is keys for each ngram (e.g., 1gram, 2gram, 3gram,
-        etc.) which map to dictionaries. These sub dictionaries (for n greater
-        than 1) contain keys mapping contexts to dictionaries mapping targets to
-        counts. For the bigram 'the cat', the context is 'the' and the target is
-        'cat'. For example, if data contains one sentence 'the cat jumps the
-        cat.', and
-        ngram_size == 2, the returned dictionary would be 
-        {'1gram': {'the': 2, 'cat': 2, 'jumps': 1, '.': 1, '</s>': 1}, 
-        '2gram': {'<s>': {'the': 1}, 'the': {'cat': 2}, 
-                'cat': {'jumps': 1, '.': 1}, 
-                'jumps': {'the': 1}, '.': {'</s>': 1}}}
-
-        Args:
-            data (str): String containing data to count ngrams in 
-            ngrams (dict): A dictionary that can contain prior counts
-
-        Returns:
-            dict: A dictionary containing counts of ngrams
-
-        For example, 
-        >>> with open('tiny_data/cat.txt', 'r') as f:
-        ...     data = f.read()
-        >>> model = NGram(ngram_size=1, vocab_file='tiny_data/cat_vocab.txt')
-        >>> ngrams = model.mle('cat.txt', {})
-        >>> ngrams
-        {'1gram': {'the': 3, 'cat': 4, 'jumps': 2, 'over': 2, 'other': 2, '.':
-                   2, '</s>': 2, 'was': 1, 'unhappy': 2, ',': 2, 'and': 1, 'as':
-                   1, '<unk>': 3, 'know': 1, 'an': 1, 'is': 1, 'one': 1, 'that':
-                   1, 'again': 1}}
-        >>> model.mle('cat.txt', ngrams)
-        {'1gram': {'the': 6, 'cat': 8, 'jumps': 4, 'over': 4, 'other': 4, '.':
-                   4, '</s>': 4, 'was': 2, 'unhappy': 4, ',': 4, 'and': 2, 'as':
-                   2, '<unk>': 6, 'know': 2, 'an': 2, 'is': 2, 'one': 2, 'that':
-                   2, 'again': 2}}
-        >>> model = NGram(ngram_size=2, vocab_file='tiny_data/cat_vocab.txt')
-        >>> model.mle('cat.txt', {})
-        {'1gram': {'the': 3, 'cat': 4, 'jumps': 2, 'over': 2, 'other': 2, '.':
-                   2, '</s>': 2, 'was': 1, 'unhappy': 2, ',': 2, 'and': 1, 'as':
-                   1, '<unk>': 3, 'know': 1, 'an': 1, 'is': 1, 'one': 1, 'that':
-                   1, 'again': 1}, 
-         '2gram': {'<s>': {'the': 2}, 'the': {'cat':
-                   1, 'other': 2}, 'cat': {'jumps': 1, '.': 1, 'was': 1, 'is':
-                   1}, 'jumps': {'over': 2}, 'over': {'the': 1, '<unk>': 1},
-                   'other': {'cat': 2}, '.': {'</s>': 2}, 'was': {'unhappy': 1},
-                   'unhappy': {',': 1, 'cat': 1}, ',': {'and': 1, 'an': 1},
-                   'and': {'as': 1}, 'as': {'<unk>': 1}, '<unk>': {'know': 1,
-                   'jumps': 1, 'again': 1}, 'know': {',': 1}, 'an': {'unhappy':
-                   1}, 'is': {'one': 1}, 'one': {'that': 1}, 'that': {'<unk>':
-                   1}, 'again': {'.': 1}}}
         """
-        return_dict = {}
+    Implements part of maximum likelihood estimation. In particular,
+    counts of ngrams in data are returned as a dictionary. If the parameter
+    ngrams is passed an existing dictionary, the counts are added to that
+    dictionary. 
 
-        #n=1
+    The returned dictionary should contain counts of ngrams of size
+    self.ngram_size and all lower order ngrams. The core structure of the
+    returned dictionary is keys for each ngram (e.g., 1gram, 2gram, 3gram,
+    etc.) which map to dictionaries. These sub dictionaries (for n greater
+    than 1) contain keys mapping contexts to dictionaries mapping targets to
+    counts. For the bigram 'the cat', the context is 'the' and the target is
+    'cat'. For example, if data contains one sentence 'the cat jumps the
+    cat.', and
+    ngram_size == 2, the returned dictionary would be 
+    {'1gram': {'the': 2, 'cat': 2, 'jumps': 1, '.': 1, '</s>': 1}, 
+    '2gram': {'<s>': {'the': 1}, 'the': {'cat': 2}, 
+            'cat': {'jumps': 1, '.': 1}, 
+            'jumps': {'the': 1}, '.': {'</s>': 1}}}
+
+    Args:
+        data (str): String containing data to count ngrams in 
+        ngrams (dict): A dictionary that can contain prior counts
+
+    Returns:
+        dict: A dictionary containing counts of ngrams
+    """
+        if ngrams is None:
+            ngrams = {}
+
+#case n=1
         if self.ngram_size >= 1:
-            for word in data:
-                return_dict['1gram'] = {}
-                if word in return_dict['1gram']:
-                    return_dict['1gram'] += 1
+            get_ngrams_1 = self.get_ngrams(data, 1)
+            ngrams['1gram'] = {}
+
+            for i in get_ngrams_1:
+                if i[0] in ngrams['1gram']:
+                    ngrams['1gram'][i[0]] += 1
                 else:
-                    return_dict['1gram'][word] = 1
-        
-        #n>1
+                    ngrams['1gram'][i[0]] = 1
+
+#case n>1
+
         if self.ngram_size > 1:
-            for ngram_case in range(self.ngram_size - 1):
-                return_dict[str(ngram_case + 2) + 'gram'] = {}
-                
-            for word in data:
-                if word in return_dict[str(ngram_case + 2) + 'gram']:
-                    return_dict[str(ngram_case + 2) + 'gram'] += 1
-                    
-                else:
-                    return_dict[str(ngram_case + 2) + 'gram'] = 1
+            size = self.ngram_size
+
+            for n in range(2, size + 1):
+                get_ngrams_n = self.get_ngrams(data, n)
+                ngrams[str(n) + 'gram'] = {}
+
+                for ngram in get_ngrams_n:
+                    context = " ".join(ngram[:-1])
+                    target = ngram[-1]
+
+                    if context in ngrams[str(n) + 'gram']:
+                        if target in ngrams[str(n) + 'gram'][context]:
+                            ngrams[str(n) + 'gram'][context][target] += 1
+                        else:
+                            ngrams[str(n) + 'gram'][context][target] = 1
+                    else:
+                        ngrams[str(n) + 'gram'][context] = {target: 1}
+        #print(ngrams)
+        return ngrams
+
         
 
 
@@ -359,7 +344,22 @@ class NGram:
         >>> model.addK_prob(('the', 'cat', 'is'), 0)
         0.0
         """
-        raise NotImplementedError
+        mle_dict = self.mle(" ".join(ngram), {})
+        mle_sub_dict = mle_dict[str(len(ngram)) + 'gram']
+        
+        context = " ".join(ngram[:-1])
+        target = ngram[-1]
+
+        #count(context, target) and count(context)
+        count_context_target_numerator = mle_sub_dict[context].get(target)
+        count_context_target_denomenator = sum(mle_sub_dict[context].values())
+
+        #|vocab|
+        size_vocab = sum(mle_dict['1gram'].values())
+
+        P_K = (count_context_target_numerator + k) / (count_context_target_denomenator + (k*size_vocab))
+        print(P_K)
+        return P_K
 
     #TODO: 25 points
     def interpolation_prob(self, ngram:tuple[str], lambdas:list[float]) -> float:
@@ -677,5 +677,4 @@ class NGram:
         raise NotImplementedError
 
 if __name__ == '__main__':
-
     ngram = NGram()
