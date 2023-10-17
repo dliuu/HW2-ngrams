@@ -216,7 +216,8 @@ class NGram:
          ('<unk>', '<unk>', '<unk>'), ('<unk>', '<unk>', 'cat'), 
          ('<unk>', 'cat', 'again'), ('cat', 'again', '</s>')]
         """
-        data = data.lower()
+        if isinstance(data, str):
+            data = data.lower()
 
         sentences = sent_tokenize(data)
         ngrams = []
@@ -345,20 +346,29 @@ class NGram:
         0.0
         """
         mle_dict = self.mle(" ".join(ngram), {})
-        mle_sub_dict = mle_dict[str(len(ngram)) + 'gram']
+        #mle_sub_dict = mle_dict[str(len(ngram)) + 'gram']
+        mle_sub_dict = self.ngrams[str(len(ngram)) + 'gram']
         
-        context = " ".join(ngram[:-1])
+        if len(ngram) > 1:
+            context = " ".join(ngram[:-1])
+        else:
+            context = ngram[-1]
+
         target = ngram[-1]
 
-        #count(context, target) and count(context)
-        count_context_target_numerator = mle_sub_dict[context].get(target)
-        count_context_target_denomenator = sum(mle_sub_dict[context].values())
+        if len(ngram) == 1:
+            if ngram[0] in self.ngrams[str(len(ngram)) + 'gram']:
+                count_context_target_numerator = self.ngrams[str(len(ngram)) + 'gram'][ngram[0]]
+            count_context_target_denomenator = sum(self.ngrams[str(len(ngram)) + 'gram'].values())
+
+        else:
+            count_context_target_numerator = mle_sub_dict[context].get(target,0)
+            count_context_target_denomenator = sum(mle_sub_dict[context].values())
 
         #|vocab|
-        size_vocab = sum(mle_dict['1gram'].values())
+        size_vocab = len(self.vocab) + 2
 
         P_K = (count_context_target_numerator + k) / (count_context_target_denomenator + (k*size_vocab))
-        print(P_K)
         return P_K
 
     #TODO: 25 points
@@ -400,8 +410,64 @@ class NGram:
         >>> model.interpolation_prob(('the', 'cat'), [0.7, 0.2, 0.1])
         AssertionError: ('the', 'cat') is not a 3gram!
         """
+        #catch errors
+        if len(ngram) != len(lambdas):
+            raise AssertionError(f"{ngram} is not a {len(lambdas)}gram!")
 
-        raise NotImplementedError
+        if abs(sum(lambdas) - 1.0) > 0:
+            raise AssertionError(f"{lambdas} do not sum to 1")
+
+
+        #current ngram
+        #mle_dict = self.ngrams(" ".join(ngram), {})
+        mle_sub_dict = self.ngrams[str(len(ngram)) + 'gram']
+        
+        context = " ".join(ngram[:-1])
+        target = ngram[-1]
+
+        print(context)
+        print(target)
+        print(mle_sub_dict)
+
+        if context in mle_sub_dict:
+            count_context_target_numerator = mle_sub_dict[context].get(target, 0)
+        else:
+            count_context_target_numerator = 0
+
+        count_context_target_denomenator = sum(mle_sub_dict[context].values())
+
+        size_vocab = len(self.vocab) + 2
+        P_K = (count_context_target_numerator) / (count_context_target_denomenator + size_vocab)
+
+        #ngram = 1
+        if len(ngram) == 1:
+            return P_K
+
+        #ngram - 1
+        if len(ngram) > 1:
+            mle_sub_dict = self.ngrams[str(len(ngram)-1) + 'gram']
+            if mle_sub_dict[context] in mle_sub_dict:
+                count_context_target_numerator = mle_sub_dict[context].get(target, 0)
+                count_context_target_denomenator = sum(mle_sub_dict[context].values())
+            else:
+                count_context_target_numerator = 0
+                count_context_target_denomenator = 0
+            
+            P_K_minus1 = (count_context_target_numerator) / (count_context_target_denomenator + size_vocab)
+
+        if len(ngram) == 2:
+            return (P_K_minus1 * lambdas[0]) + (P_K * lambdas[1])
+        
+        #ngram - 2
+        if len(ngram > 2):
+            mle_sub_dict = self.ngrams[str(len(ngram)-2) + 'gram']
+            count_context_target_numerator = mle_sub_dict[context].get(target, 0)
+            count_context_target_denomenator = sum(mle_sub_dict[context].values())
+            P_K_minus2 = (count_context_target_numerator) / (count_context_target_denomenator + size_vocab)
+
+        if len(ngram) == 3:
+            return (P_K_minus2 * lambdas[0]) + (P_K_minus1 * lambdas[1]) + (P_K * lambdas[0])
+        
 
     def prob(self, ngram:tuple[str], params:dict={}) -> float:
         """Function which returns the probability of a ngram. 
@@ -674,7 +740,17 @@ class NGram:
          again </s>', '<s> <s> other was unhappy , and as <unk> know an is one
          that again </s>']
         """
-        raise NotImplementedError
+        generated_sentences = []
+        for _ in range(n):
+            sentence = ["<s>", "<s>"]
+            while True:
+            # Generate the next word based on the n-gram model
+                next_word = self.generate_next_word(sentence)
+                sentence.append(next_word)
+                if next_word == "</s>":
+                    break 
+            generated_sentences.append(" ".join(sentence))
+        return generated_sentences
 
 if __name__ == '__main__':
     ngram = NGram()
