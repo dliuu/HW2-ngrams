@@ -356,13 +356,16 @@ class NGram:
 
         target = ngram[-1]
 
+        count_context_target_numerator = 0
+        count_context_target_denomenator = 0 
+
         if len(ngram) == 1:
             if ngram[0] in self.ngrams[str(len(ngram)) + 'gram']:
                 count_context_target_numerator = self.ngrams[str(len(ngram)) + 'gram'][ngram[0]]
             count_context_target_denomenator = sum(self.ngrams[str(len(ngram)) + 'gram'].values())
 
         else:
-            count_context_target_numerator = mle_sub_dict[context].get(target,0)
+            count_context_target_numerator = mle_sub_dict[context].get(target, 0)
             count_context_target_denomenator = sum(mle_sub_dict[context].values())
 
         #|vocab|
@@ -417,57 +420,23 @@ class NGram:
         if abs(sum(lambdas) - 1.0) > 0:
             raise AssertionError(f"{lambdas} do not sum to 1")
 
+        P_K = 0.0
 
-        #current ngram
-        #mle_dict = self.ngrams(" ".join(ngram), {})
-        mle_sub_dict = self.ngrams[str(len(ngram)) + 'gram']
+    
+        for i in range(len(ngram)):
+            start = 0
+
+            current_prob = self.addK_prob(ngram[i:], 0)
+            lambda_value = lambdas[i]
+            P_K += (current_prob * lambda_value)
+
+            start += 1
+            #print(ngram[i:])
+            #print(current_prob)
+            #print(P_K)
         
-        context = " ".join(ngram[:-1])
-        target = ngram[-1]
+        return float(P_K)
 
-        print(context)
-        print(target)
-        print(mle_sub_dict)
-
-        if context in mle_sub_dict:
-            count_context_target_numerator = mle_sub_dict[context].get(target, 0)
-        else:
-            count_context_target_numerator = 0
-
-        count_context_target_denomenator = sum(mle_sub_dict[context].values())
-
-        size_vocab = len(self.vocab) + 2
-        P_K = (count_context_target_numerator) / (count_context_target_denomenator + size_vocab)
-
-        #ngram = 1
-        if len(ngram) == 1:
-            return P_K
-
-        #ngram - 1
-        if len(ngram) > 1:
-            mle_sub_dict = self.ngrams[str(len(ngram)-1) + 'gram']
-            if mle_sub_dict[context] in mle_sub_dict:
-                count_context_target_numerator = mle_sub_dict[context].get(target, 0)
-                count_context_target_denomenator = sum(mle_sub_dict[context].values())
-            else:
-                count_context_target_numerator = 0
-                count_context_target_denomenator = 0
-            
-            P_K_minus1 = (count_context_target_numerator) / (count_context_target_denomenator + size_vocab)
-
-        if len(ngram) == 2:
-            return (P_K_minus1 * lambdas[0]) + (P_K * lambdas[1])
-        
-        #ngram - 2
-        if len(ngram > 2):
-            mle_sub_dict = self.ngrams[str(len(ngram)-2) + 'gram']
-            count_context_target_numerator = mle_sub_dict[context].get(target, 0)
-            count_context_target_denomenator = sum(mle_sub_dict[context].values())
-            P_K_minus2 = (count_context_target_numerator) / (count_context_target_denomenator + size_vocab)
-
-        if len(ngram) == 3:
-            return (P_K_minus2 * lambdas[0]) + (P_K_minus1 * lambdas[1]) + (P_K * lambdas[0])
-        
 
     def prob(self, ngram:tuple[str], params:dict={}) -> float:
         """Function which returns the probability of a ngram. 
@@ -543,7 +512,25 @@ class NGram:
         >>> model.surprisal(('the', 'cat', 'is'), {'lambdas': [0.7, 0.1, 0.2]})
         5.008770209627732
         """
-        raise NotImplementedError
+        if not params or len(params) == 0:
+            ngram_prob = self.addK_prob(ngram, 0)
+
+        elif 'k' in params:  # Use add-k 
+            k = params['k']
+            ngram_prob = self.addK_prob(ngram, k)
+        
+        elif 'lambdas' in params:  # Use interpolation
+            lambdas = params['lambdas']
+            ngram_prob = self.interpolation_prob(ngram, lambdas)
+        else:
+            raise ValueError("Invalid smoothing method specified in params.")
+
+        if ngram_prob == 0:
+            ngram_prob = epsilon  # Avoid errors when probability = 0
+
+        surprisal_value = -math.log2(ngram_prob)
+        return surprisal_value
+        
 
     #TODO: 10 points
     def perplexity(self, data:str, params:dict={}) -> float:
@@ -565,7 +552,16 @@ class NGram:
         >>> model.perplexity('the dog jumps sometimes over the cat.', {'k':1})
         17.107422701729504
         """
-        raise NotImplementedError
+        surprisal_value = 0
+
+        get_ngrams = self.get_ngrams(data, 3)
+        for i in get_ngrams:
+            s_value = self.surprisal(data, {})
+            surprisal_value += s_value
+        
+        return (2 ** (surprisal_value))
+
+        
 
     #TODO: 10 points
     def entropy(self, context:tuple[str], params:dict={}, 
@@ -593,7 +589,23 @@ class NGram:
         >>> model.entropy((), {'k':1})
         4.131283219768024
         """
-        raise NotImplementedError
+        return_value = 0
+
+        for i in self.vocab:
+
+            context_list = list(context)
+            t_input = tuple(context_list + [i])
+
+            if self.prob((t_input), params) == 0:
+                continue
+
+            surprisal = self.surprisal(t_input, params)
+            prob = self.prob(t_input, params)
+
+            add_val = surprisal * prob
+            return_value = add_val + return_value
+
+        return return_value
 
     #TODO: 10 points
     def byWordMetrics(self, data:str, params:dict={}) -> None:
@@ -620,7 +632,7 @@ class NGram:
         cat	    4.392317422778761		4.08792135502739		0
         </s>	4.392317422778761		4.08792135502739		0.0
         """
-        raise NotImplementedError
+        
 
     def train(self, directory:str) -> None:
         """Trains a ngram model by applying mle to all the txt files in a

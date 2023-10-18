@@ -17,5 +17,5 @@ def testEntropy():
         sys.exit(1)
 
 
-
+    print('output: ' + str(round(model.entropy(('<s>', '<s>'), {}), 5)))
     assert round(model.entropy(('<s>', '<s>'), {}), 5) == 0.9183

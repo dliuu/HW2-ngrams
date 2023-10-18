@@ -17,6 +17,7 @@ def testInterpolationProb():
         sys.exit(1)
 
 
-
+    print(round(model.interpolation_prob(('the', '<unk>', 'was'), [0.05, 0.45,
+                                                                0.50]), 5))
     assert round(model.interpolation_prob(('the', '<unk>', 'was'), [0.05, 0.45,
                                                                 0.50]), 5) == 0.09674
