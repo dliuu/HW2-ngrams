@@ -632,7 +632,25 @@ class NGram:
         cat	    4.392317422778761		4.08792135502739		0
         </s>	4.392317422778761		4.08792135502739		0.0
         """
+        words = data.split()
         
+        # Print table header
+        print("word \t surprisal \t entropy \t entropy-reduction")
+        context = ()
+
+        for word in words:
+            surprisal = self.surprisal(context + (word,), params)
+            entropy = self.entropy(context + (word,), params)
+            
+            if context:
+                prev_entropy = self.entropy(context, params)
+                entropy_reduction = prev_entropy - entropy
+            else:
+                entropy_reduction = 0.0  
+
+            print(f"{word} \t {surprisal} \t {entropy} \t {entropy_reduction}")
+            context += (word,)
+
 
     def train(self, directory:str) -> None:
         """Trains a ngram model by applying mle to all the txt files in a
@@ -752,16 +770,32 @@ class NGram:
          again </s>', '<s> <s> other was unhappy , and as <unk> know an is one
          that again </s>']
         """
+        import random
+        word_list = []
+        count_list = []
+
+        for word in self.vocab:
+            word_prob = self.prob(tuple([word]), {})
+            if word_prob > 0:
+                word_list.append(word)
+                count_list.append(self.prob(tuple([word]), {}))
+        
+        #print(word_list)
+        #print(count_list)
+
         generated_sentences = []
         for _ in range(n):
             sentence = ["<s>", "<s>"]
             while True:
             # Generate the next word based on the n-gram model
-                next_word = self.generate_next_word(sentence)
+                next_word = random.choices(word_list, count_list)[0]
                 sentence.append(next_word)
                 if next_word == "</s>":
                     break 
             generated_sentences.append(" ".join(sentence))
+        
+        print(generated_sentences)
+
         return generated_sentences
 
 if __name__ == '__main__':
