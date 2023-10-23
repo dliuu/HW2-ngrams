@@ -345,9 +345,11 @@ class NGram:
         >>> model.addK_prob(('the', 'cat', 'is'), 0)
         0.0
         """
-        mle_dict = self.mle(" ".join(ngram), {})
+        #mle_dict = self.mle(" ".join(ngram), {})
         #mle_sub_dict = mle_dict[str(len(ngram)) + 'gram']
-        mle_sub_dict = self.ngrams[str(len(ngram)) + 'gram']
+        mle_sub_dict = self.ngrams
+        if (str(len(ngram)) + 'gram') in self.ngrams:
+            mle_sub_dict = self.ngrams[str(len(ngram)) + 'gram']
         
         if len(ngram) > 1:
             context = " ".join(ngram[:-1])
@@ -359,20 +361,30 @@ class NGram:
         count_context_target_numerator = 0
         count_context_target_denomenator = 0 
 
+
         if len(ngram) == 1:
             if ngram[0] in self.ngrams[str(len(ngram)) + 'gram']:
                 count_context_target_numerator = self.ngrams[str(len(ngram)) + 'gram'][ngram[0]]
+  
             count_context_target_denomenator = sum(self.ngrams[str(len(ngram)) + 'gram'].values())
 
         else:
-            count_context_target_numerator = mle_sub_dict[context].get(target, 0)
-            count_context_target_denomenator = sum(mle_sub_dict[context].values())
+            if context not in mle_sub_dict:
+                count_context_target_numerator = 0
+                count_context_target_denomenator = 0 
+            else:
+                count_context_target_numerator = mle_sub_dict[context].get(target, 0)
+                count_context_target_denomenator = sum(mle_sub_dict[context].values())
 
         #|vocab|
         size_vocab = len(self.vocab) + 2
 
-        P_K = (count_context_target_numerator + k) / (count_context_target_denomenator + (k*size_vocab))
-        return P_K
+    
+        if (count_context_target_denomenator + (k*size_vocab)) == 0:
+            return 0
+        else:
+            P_K = (count_context_target_numerator + k) / (count_context_target_denomenator + (k*size_vocab))
+            return P_K
 
     #TODO: 25 points
     def interpolation_prob(self, ngram:tuple[str], lambdas:list[float]) -> float:
@@ -556,8 +568,10 @@ class NGram:
 
         get_ngrams = self.get_ngrams(data, 3)
         for i in get_ngrams:
-            s_value = self.surprisal(data, {})
+            s_value = self.surprisal(i, params)
             surprisal_value += s_value
+        
+        surprisal_value = surprisal_value / len(get_ngrams)
         
         return (2 ** (surprisal_value))
 
@@ -636,11 +650,21 @@ class NGram:
         
         # Print table header
         print("word \t surprisal \t entropy \t entropy-reduction")
-        context = ()
+        print_tuple = ()
 
-        for word in words:
-            surprisal = self.surprisal(context + (word,), params)
-            entropy = self.entropy(context + (word,), params)
+        ngrams = self.get_ngrams(data, self.ngram_size)
+
+        for ngram in ngrams:
+
+            if len(ngram) > 1:
+                context = " ".join(ngram[:-1])
+            else:
+                context = ngram[-1]
+            
+            #context_tuple = context
+
+            surprisal = self.surprisal([context], params)
+            entropy = self.entropy(tuple([context]), params)
             
             if context:
                 prev_entropy = self.entropy(context, params)
@@ -648,8 +672,8 @@ class NGram:
             else:
                 entropy_reduction = 0.0  
 
-            print(f"{word} \t {surprisal} \t {entropy} \t {entropy_reduction}")
-            context += (word,)
+            print(f"{ngram} \t {surprisal} \t {entropy} \t {entropy_reduction}")
+            print_tuple += (ngram)
 
 
     def train(self, directory:str) -> None:
@@ -770,7 +794,7 @@ class NGram:
          again </s>', '<s> <s> other was unhappy , and as <unk> know an is one
          that again </s>']
         """
-        import random
+        
         word_list = []
         count_list = []
 
@@ -784,19 +808,30 @@ class NGram:
         #print(count_list)
 
         generated_sentences = []
-        for _ in range(n):
-            sentence = ["<s>", "<s>"]
+        for i in range(n):
+            sentence = [self.bos, self.bos]
             while True:
-            # Generate the next word based on the n-gram model
+                # Generate
                 next_word = random.choices(word_list, count_list)[0]
                 sentence.append(next_word)
-                if next_word == "</s>":
+                #print(sentence)
+                
+                if next_word == self.eos:
+                    generated_sentences.append(" ".join(sentence))
                     break 
-            generated_sentences.append(" ".join(sentence))
-        
-        print(generated_sentences)
+                
+                if len(sentence) == 10:
+                    sentence.append(self.eos)
+                    generated_sentences.append(" ".join(sentence))
+                    break
+        #print(generated_sentences)
 
         return generated_sentences
 
 if __name__ == '__main__':
     ngram = NGram()
+    with open('tiny_data/cat.txt', 'r') as f:
+        data = f.read()
+        model = NGram(ngram_size=3, vocab_file='tiny_data/cat_vocab.txt')
+        model.ngrams = model.mle(data, {})
+        model.byWordMetrics('the dog jumps over the cat', {'k': 1})
