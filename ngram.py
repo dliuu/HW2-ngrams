@@ -279,7 +279,9 @@ class NGram:
 #case n=1
         if self.ngram_size >= 1:
             get_ngrams_1 = self.get_ngrams(data, 1)
-            ngrams['1gram'] = {}
+
+            if '1gram' not in ngrams.keys():
+                ngrams['1gram'] = {}
 
             for i in get_ngrams_1:
                 if i[0] in ngrams['1gram']:
@@ -294,7 +296,9 @@ class NGram:
 
             for n in range(2, size + 1):
                 get_ngrams_n = self.get_ngrams(data, n)
-                ngrams[str(n) + 'gram'] = {}
+                if (str(n) + 'gram') not in ngrams.keys():
+                    ngrams[str(n) + 'gram'] = {}
+                
 
                 for ngram in get_ngrams_n:
                     context = " ".join(ngram[:-1])
@@ -604,6 +608,8 @@ class NGram:
         4.131283219768024
         """
         return_value = 0
+        self.vocab.add(self.eos)
+        self.vocab.add(self.unk)
 
         for i in self.vocab:
 
@@ -663,7 +669,7 @@ class NGram:
             
             #context_tuple = context
 
-            surprisal = self.surprisal([context], params)
+            surprisal = self.surprisal(ngram, params)
             entropy = self.entropy(tuple([context]), params)
             
             if context:
@@ -802,9 +808,9 @@ class NGram:
             word_prob = self.prob(tuple([word]), {})
             if word_prob > 0:
                 word_list.append(word)
-                count_list.append(self.prob(tuple([word]), {}))
+                count_list.append(word_prob)
         
-        #print(word_list)
+        #print(word_list)``
         #print(count_list)
 
         generated_sentences = []
