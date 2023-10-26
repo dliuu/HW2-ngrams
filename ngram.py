@@ -571,6 +571,7 @@ class NGram:
         surprisal_value = 0
 
         get_ngrams = self.get_ngrams(data, 3)
+        
         for i in get_ngrams:
             s_value = self.surprisal(i, params)
             surprisal_value += s_value
