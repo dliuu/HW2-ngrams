@@ -1,3 +1,14 @@
+'''I iterate through each decimal place or each two decimal places (10-100 iterations)
+to find the local minimum for Ks and Lambdas. I tune for the first Lambda(L1) and set the other
+two lambdas to be (1-dec)/2. Currently, all of the other for loops are commented out, and 
+only the 25-epoch windows corresponding to the local minimum on the training set is shown.
+
+I use the optimized K and L1 25-epoch windows from the training data on the test and eval data to
+find their optimized values.
+
+Feel free to remove the comments on the other loops, but the code will run for a while :) 
+'''
+
 from ngram import NGram
 
 model = NGram()
